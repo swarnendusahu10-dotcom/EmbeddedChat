@@ -8,7 +8,11 @@ export const extractTokenCookie = (
         const [key, value] = cookie.split("=");
 
         if (key.trim() === "ec-token") {
-            token = decodeURIComponent(value);
+            try {
+                token = decodeURIComponent(value);
+            } catch (e) {
+                token = undefined;
+            }
             break;
         }
     }

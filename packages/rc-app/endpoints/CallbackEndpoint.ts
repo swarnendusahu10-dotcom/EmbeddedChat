@@ -28,20 +28,42 @@ export class CallbackEndpoint extends ApiEndpoint {
         persis: IPersistence
     ): Promise<IApiResponse> {
         const { state, code } = request.query;
+
+        let origin = "";
+        try {
+            origin =
+                typeof state === "string" ? decodeURIComponent(state) : "";
+            if (!origin && state !== "") {
+                throw new Error("Missing state parameter");
+            }
+        } catch (e) {
+            return {
+                status: 400,
+                content: await getCallbackContent(
+                    read,
+                    null,
+                    "",
+                    "Invalid state parameter"
+                ),
+                headers: {
+                    "Content-Security-Policy":
+                        "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self'; font-src 'self'; object-src 'none'",
+                },
+            };
+        }
+
         const readEnvironment = read.getEnvironmentReader().getSettings();
         const [
             customOAuthName,
             client_id,
             client_secret,
             redirect_uri,
-            origin,
             tokenUrl,
         ] = await Promise.all([
             readEnvironment.getValueById("custom-oauth-name"),
             readEnvironment.getValueById("client-id"),
             readEnvironment.getValueById("client-secret"),
             getCallbackUrl(this.app),
-            Promise.resolve(decodeURIComponent(state)),
             getTokenUrl(read),
         ]);
 
