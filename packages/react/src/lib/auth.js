@@ -17,25 +17,76 @@ async function deleteTokenLocalStorage(key = 'ec_token') {
   }
 }
 
-async function saveTokenSecure(token) {
-  this.handleSecureLogin('save', token);
+async function saveTokenSecure(token, authHandler = null) {
+  const handler =
+    authHandler && typeof authHandler.handleSecureLogin === 'function'
+      ? authHandler
+      : this && typeof this.handleSecureLogin === 'function'
+      ? this
+      : null;
+
+  if (handler) {
+    try {
+      return await handler.handleSecureLogin('save', token);
+    } catch (error) {
+      console.error('Failed to save secure auth token:', error);
+    }
+  }
 }
 
-async function getTokenSecure() {
-  const response = await this.handleSecureLogin('get');
-  return response?.token !== undefined ? response.token : null;
+async function getTokenSecure(authHandler = null) {
+  const handler =
+    authHandler && typeof authHandler.handleSecureLogin === 'function'
+      ? authHandler
+      : this && typeof this.handleSecureLogin === 'function'
+      ? this
+      : null;
+
+  if (handler) {
+    try {
+      const response = await handler.handleSecureLogin('get');
+      return response?.token !== undefined ? response.token : null;
+    } catch (error) {
+      console.error('Failed to get secure auth token:', error);
+      return null;
+    }
+  }
+  return null;
 }
 
-async function deleteTokenSecure() {
-  this.handleSecureLogin('delete');
+async function deleteTokenSecure(authHandler = null) {
+  const handler =
+    authHandler && typeof authHandler.handleSecureLogin === 'function'
+      ? authHandler
+      : this && typeof this.handleSecureLogin === 'function'
+      ? this
+      : null;
+
+  if (handler) {
+    try {
+      return await handler.handleSecureLogin('delete');
+    } catch (error) {
+      console.error('Failed to delete secure auth token:', error);
+    }
+  }
 }
 
-export function getTokenStorage(secure = false, key = 'ec_token') {
+export function getTokenStorage(
+  secure = false,
+  key = 'ec_token',
+  authHandler = null
+) {
   if (secure) {
     return {
-      saveToken: saveTokenSecure,
-      getToken: getTokenSecure,
-      deleteToken: deleteTokenSecure,
+      saveToken: function (token) {
+        return saveTokenSecure.call(this, token, authHandler);
+      },
+      getToken: function () {
+        return getTokenSecure.call(this, authHandler);
+      },
+      deleteToken: function () {
+        return deleteTokenSecure.call(this, authHandler);
+      },
     };
   }
   return {
