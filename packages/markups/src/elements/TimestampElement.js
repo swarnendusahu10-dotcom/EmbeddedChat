@@ -3,17 +3,21 @@ import PropTypes from 'prop-types';
 import CodeElement from './CodeElement';
 
 function timeAgo(dateParam, locale) {
+  const date = new Date(dateParam).getTime();
+  if (Number.isNaN(date)) {
+    return '';
+  }
+
   const int = new Intl.RelativeTimeFormat(locale, { style: 'long' });
 
-  const date = new Date(dateParam).getTime();
   const today = new Date().getTime();
   const seconds = Math.round((date - today) / 1000);
   const minutes = Math.round(seconds / 60);
   const hours = Math.round(minutes / 60);
   const days = Math.round(hours / 24);
   const weeks = Math.round(days / 7);
-  const months = new Date(date).getMonth() - new Date().getMonth();
-  const years = new Date(date).getFullYear() - new Date().getFullYear();
+  const months = Math.round(days / 30.4375);
+  const years = Math.round(days / 365.25);
 
   if (Math.abs(seconds) < 60) {
     return int.format(seconds, 'seconds');
