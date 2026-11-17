@@ -7,6 +7,10 @@ import ItalicSpan from './ItalicSpan';
 import BoldSpan from './BoldSpan';
 
 const getBaseURI = () => {
+  if (typeof document === 'undefined') {
+    return '';
+  }
+
   if (document.baseURI) {
     return document.baseURI;
   }
@@ -22,20 +26,39 @@ const getBaseURI = () => {
 
   // Else use implementation of documentURI:
   //   http://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-baseURI
-  return document.URL;
+  return document.URL || '';
 };
 
-const isExternal = (href) => href.indexOf(getBaseURI()) !== 0;
+const isExternal = (href) => {
+  if (typeof href !== 'string' || !href.trim()) {
+    return false;
+  }
+  const baseURI = getBaseURI();
+  if (!baseURI) {
+    return true;
+  }
+  return href.indexOf(baseURI) !== 0;
+};
+
+const sanitizeHref = (href) => {
+  if (typeof href !== 'string') {
+    return '';
+  }
+  const trimmed = href.trim();
+  if (/^(?:javascript|vbscript|data):/i.test(trimmed)) {
+    return '';
+  }
+  return trimmed;
+};
 
 const LinkSpan = ({ href, label }) => {
-  const { theme } = useTheme();
-  const { mode } = useTheme();
+  const { theme, mode } = useTheme();
 
   const contents = React.useMemo(() => {
     const labelArray = Array.isArray(label) ? label : [label];
 
     const labelElements = labelArray.map((content, index) => {
-      switch (content.type) {
+      switch (content?.type) {
         case 'PLAIN_TEXT':
           return <PlainSpan key={index} contents={content.value} />;
 
@@ -56,32 +79,23 @@ const LinkSpan = ({ href, label }) => {
     return labelElements;
   }, [label]);
 
-  if (isExternal(href)) {
-    return (
-      <a
-        href={href}
-        title={href}
-        style={{
-          color:
-            mode === 'light'
-              ? theme.colors.info
-              : theme.colors.warningForeground,
-        }}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {contents}
-      </a>
-    );
+  const safeHref = sanitizeHref(href);
+
+  if (!safeHref) {
+    return <span>{contents}</span>;
   }
+
+  const external = isExternal(safeHref);
+
   return (
     <a
-      href={href}
-      title={href}
+      href={safeHref}
+      title={safeHref}
       style={{
         color:
           mode === 'light' ? theme.colors.info : theme.colors.warningForeground,
       }}
+      {...(external ? { rel: 'noopener noreferrer', target: '_blank' } : {})}
     >
       {contents}
     </a>
@@ -92,5 +106,9 @@ export default LinkSpan;
 
 LinkSpan.propTypes = {
   href: PropTypes.string,
-  label: PropTypes.array,
+  label: PropTypes.oneOfType([
+    PropTypes.array,
+    PropTypes.object,
+    PropTypes.string,
+  ]),
 };
