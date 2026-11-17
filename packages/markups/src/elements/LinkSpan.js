@@ -5,6 +5,8 @@ import PlainSpan from './PlainSpan';
 import StrikeSpan from './StrikeSpan';
 import ItalicSpan from './ItalicSpan';
 import BoldSpan from './BoldSpan';
+import CodeElement from './CodeElement';
+import Emoji from './Emoji';
 
 const getBaseURI = () => {
   if (document.baseURI) {
@@ -47,6 +49,12 @@ const LinkSpan = ({ href, label }) => {
 
         case 'BOLD':
           return <BoldSpan key={index} contents={content.value} />;
+
+        case 'INLINE_CODE':
+          return <CodeElement key={index} contents={content.value} />;
+
+        case 'EMOJI':
+          return <Emoji key={index} emoji={content} />;
 
         default:
           return null;
