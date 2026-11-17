@@ -101,19 +101,25 @@ const ChatBody = ({
     useFetchChatData(showRoles);
 
   const getThreadMessages = useCallback(async () => {
-    if (isUserAuthenticated && threadMainMessage?._id) {
-      try {
-        if (!isUserAuthenticated && !anonymousMode) {
-          return;
-        }
-        const { messages } = await RCInstance.getThreadMessages(
-          threadMainMessage._id,
-          isChannelPrivate
-        );
-        setThreadMessages(messages.reverse());
-      } catch (e) {
-        console.error(e);
+    if (!threadMainMessage?._id) {
+      return;
+    }
+    if (!isUserAuthenticated && !anonymousMode) {
+      return;
+    }
+    try {
+      const res = await RCInstance.getThreadMessages(
+        threadMainMessage._id,
+        isChannelPrivate
+      );
+      if (Array.isArray(res?.messages)) {
+        setThreadMessages([...res.messages].reverse());
+      } else {
+        setThreadMessages([]);
       }
+    } catch (e) {
+      console.error(e);
+      setThreadMessages([]);
     }
   }, [
     isUserAuthenticated,
